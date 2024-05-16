@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAM Model Game</title>
+    <link rel="stylesheet" href="style.css">
+<style>
+body, html {
+    font-family: Arial, sans-serif;
+    background-color: #004080; /* Dark blue background */
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    color: white;
+}
+
+#game-container {
+    width: 80%;
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: #0066cc; /* Slightly lighter blue for contrast */
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.statements-area {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.statement {
+    width: calc(50% - 40px); /* Adjust for side-by-side layout */
+    padding: 10px;
+    margin: 10px 5px;
+    background-color: #ffffff;
+    border-radius: 5px;
+    cursor: grab;
+    color: black; /* For contrast */
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.categories {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.category {
+    width: calc(50% - 20px);
+    min-height: 250px; /* Increased height for better layout */
+    border: 2px dashed #88aadd;
+    border-radius: 5px;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white for legibility */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Align items to the top */
+    overflow: auto; /* Allows scrolling for many statements */
+}
+
+#score-display {
+    margin-top: 20px;
+}
+
+button {
+    cursor: pointer;
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+/* Added spacing from the bottom of the reset button */
+#reset-game {
+    margin-bottom: 50px;
+}
+
+@media (max-width: 768px) {
+    #game-container {
+        width: 90%;
+        padding: 10px;
+    }
+
+    .statement, .category {
+        flex-basis: 100%; /* Stack them on smaller screens */
+        margin-bottom: 10px;
+    }
+
+    .statements-area, .categories {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #score-display, button {
+        position: static; /* Remove absolute positioning on mobile */
+        transform: none;
+        margin-top: 20px;
+    }
+}
+</style>
+</head>
+<body>
+<div id="game-container">
+    <h1>TAM Model Game</h1>
+    <div id="statements" class="statements-area"></div>
+    <div class="categories">
+        <div id="pu" class="category" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2>Perceived Usefulness (PU)</h2>
+        </div>
+        <div id="peou" class="category" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2>Perceived Ease of Use (PEOU)</h2>
+        </div>
+    </div>
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <button id="reset-game">Reset Game</button>
+</div>
+<script src="script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGame();
+    document.getElementById('reset-game').addEventListener('click', initializeGame);
+});
+
+function initializeGame() {
+    document.getElementById('statements').innerHTML = '';
+    document.getElementById('pu').innerHTML = '<h2>Perceived Usefulness (PU)</h2>';
+    document.getElementById('peou').innerHTML = '<h2>Perceived Ease of Use (PEOU)</h2>';
+    document.getElementById('score').textContent = '0';
+
+    const statementsData = [
+        { text: "Improves job performance.", category: "pu" },
+        { text: "Enhances productivity.", category: "pu" },
+        { text: "Increases job effectiveness.", category: "pu" },
+        { text: "Useful in completing job tasks.", category: "pu" },
+        { text: "Saves time in task completion.", category: "pu" },
+        { text: "Easy to learn to use.", category: "peou" },
+        { text: "Simple to operate.", category: "peou" },
+        { text: "User-friendly interface.", category: "peou" },
+        { text: "Easy to become skillful at using it.", category: "peou" },
+        { text: "Requires minimal effort to use.", category: "peou" }
+    ];
+
+    statementsData.forEach((item, index) => createStatement(item, index));
+    setupCategories();
+}
+
+function createStatement(item, index) {
+    const statementsArea = document.getElementById('statements');
+    const statementDiv = document.createElement('div');
+    statementDiv.classList.add('statement');
+    statementDiv.setAttribute('draggable', true);
+    statementDiv.setAttribute('id', 'statement-' + index);
+    statementDiv.textContent = item.text;
+    statementDiv.dataset.category = item.category;
+    statementDiv.addEventListener('dragstart', drag);
+    statementsArea.appendChild(statementDiv);
+}
+
+function setupCategories() {
+    document.querySelectorAll('.category').forEach(category => {
+        category.addEventListener('dragover', allowDrop);
+        category.addEventListener('drop', drop);
+    });
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    var data = ev.dataTransfer.getData("text");
+    var statement = document.getElementById(data);
+    var target = ev.target.closest('.category');
+
+    if (target && !statement.classList.contains('dropped')) {
+        target.appendChild(statement);
+        statement.classList.add('dropped');
+        updateScore();
+    }
+}
+
+function updateScore() {
+    const statements = document.querySelectorAll('.statement.dropped');
+    let score = 0;
+    statements.forEach(statement => {
+        if (statement.dataset.category === statement.parentNode.id) {
+            score++;
+            statement.style.border = "2px solid green"; // Correct
+        } else {
+            statement.style.border = "2px solid red"; // Incorrect
+        }
+    });
+    document.getElementById('score').textContent = `${score}`;
+}
+
+
+function resetGameState() {
+    document.querySelectorAll('.statement').forEach(statement => {
+        statement.classList.remove('dropped');
+        document.getElementById('statements').appendChild(statement);
+    });
+    updateScore();
+}
+</script>
+</body>
+</html>
